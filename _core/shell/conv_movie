@@ -1,0 +1,47 @@
+#!/bin/bash
+# Autor: Hannes Becker <hb@screennetz.de>
+# Konvertiert ein Movie zuerst in FLV und erzeugt dann daraus ein SWF
+# und entfernt dann das Original vom Server
+
+# Parameter
+# $1	absoluter Pfad zum Files-Verzeichnis (ohne / am Ende)
+# $2	Original-Dateiname mit Extension
+# $3	Dateiname ohne jegliche Extension (Endung)
+
+# Variablen
+org_file="$1/$2"
+flv_file="$1/$3.flv"
+wmv_file="$1/$3.wmv"
+log_file="$1/ffmpeg.log"
+
+# Testen ob Original-Datei vorhanden ist
+if [ ! -s $org_file ]
+	then
+		exit
+fi
+
+# Testen ob Upload-Verzeichnis vorhanden ist
+if [ ! -d $1 ]
+	then
+		exit
+fi
+
+# FLV erstellen mit Thumbnails insofern es noch kein .flv ist ansonsten nur die Thumbnails generieren
+if [ ! "$2" = "$3.flv" ]
+	then
+		ffmpeg -r 0.5 -s 350x240 $1/%d.jpg -i $org_file -sameq -vcodec flv $flv_file 2> $log_file
+else
+	ffmpeg -r 0.5 -s 350x240 $1/%d.jpg -i $org_file 2> $log_file
+fi
+
+# WMV erstellen wenn Original noch kein WMV ist
+if [ ! "$2" = "$3.wmv" ]
+	then
+		ffmpeg -i $org_file -sameq -deinterlace -vcodec wmv2 -title $3 $wmv_file 2>> $log_file
+fi
+
+# wenn Original kein FLV und WMV dann entfernen
+if ( [ ! "$2" = "$3.flv" ] && [ ! "$2" = "$3.wmv" ] )
+	then
+		rm "$org_file"
+fi
